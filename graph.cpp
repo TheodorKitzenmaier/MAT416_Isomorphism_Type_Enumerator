@@ -291,6 +291,10 @@ std::string SimpleGraph::toString() {
 
 
 
+int SimpleGraph::getVertexCount() {
+	return vertexCount;
+}
+
 std::string SimpleGraph::getName(int v) {
 	if (!indexValid(v))
 		throw std::runtime_error(("Invalid index v = " + std::to_string(v)).c_str());

@@ -93,6 +93,9 @@ public:
 
 
 
+	// Returns the number of vertices in G.
+	int getVertexCount();
+
 	// Returns the name of the given vertex, <v>.
 	std::string getName(int v);
 
