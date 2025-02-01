@@ -1,6 +1,10 @@
 #include "graph.h"
 #include "isomorphism.h"
 #include <stdexcept>
+#include <iostream>
+
+//#define DEBUG(v) std::clog << v << std::endl;
+#define DEBUG(v) 
 
 bool is_isomorphic_mapping(SimpleGraph& G, SimpleGraph& H, int* mapping) {
 	// Search for mismatched vertex pair.
@@ -64,13 +68,6 @@ bool are_isomorphic(SimpleGraph& G, SimpleGraph& H) {
 		head[i] = 0;
 	}
 
-	// Select pointer: Points to the current index being incremented.
-	int* select = head;
-
-	// Select max counter: Stores the max value which can be stored at the select pointer.
-	int selectMax = 0;
-	bool returnToTail;
-
 	// Array which stores applicable mappings.
 	int* mapping = new int[G.getVertexCount()];
 	bool* tmp = new bool[G.getVertexCount()];
@@ -78,39 +75,55 @@ bool are_isomorphic(SimpleGraph& G, SimpleGraph& H) {
 	// The select pointer increments its value until it exceeds the max.
 	// The select pointer then increments the value before it, and resets
 	// all values to 1 walking back to the tail of the array.
-	while (select >= head) {
+	while (true) {
 		// Check if the current mapping shows that the two graphs are isomorphic.
+		DEBUG("Applying mapping...")
 		apply_mapping(head, mapping, tmp, G.getVertexCount());
+/*
+		for (int i = 0; i < G.getVertexCount(); i++) {
+			std::cout << head[i];
+		}
+		std::cout << std::endl;
+		for (int i = 0; i < G.getVertexCount(); i++) {
+			std::cout << mapping[i];
+		}
+		std::cout << std::endl;
+*/
+		DEBUG("OK.")
+		DEBUG("Checking mapping...")
 		if (is_isomorphic_mapping(G, H, mapping)) {
 			// Do cleanup before returning.
 			delete[] head;
 			delete[] mapping;
 			delete[] tmp;
+			DEBUG("Done (return).")
 			return true;
 		}
+		DEBUG("Done.")
 
 		// Increment and update the mapping.
-		*select++;
-		returnToTail = false;
+		int* select = tail;
+		int selectMax = 0;
+		*select = *select + 1;
 		while (*select > selectMax) {
-			// Head has exceeded max, all mappings checked.
-			if (select == head)
-				break;
-
-			// Increment previous index, return to tail.
-			select = select - 1;
-			*select++;
+			select--;
 			selectMax++;
-			returnToTail = true;
-		}
 
-		// Reset to tail.
-		if (returnToTail) {
-			while (select > tail) {
-				select++;
-				*select = 0;
+			if (select < head) {
+				// Cleanup.
+				delete[] head;
+				delete[] mapping;
+				delete[] tmp;
+				DEBUG("Mappings complete.")
+				return false;
 			}
-			selectMax = 0;
+
+			*select = *select + 1;
+		}
+		select++;
+		while (select <= tail) {
+			*select = 0;
+			select++;
 		}
 	}
 

@@ -1,5 +1,5 @@
-main:
-
+all: isomorphism graph
+	g++ iso_calculator.cpp isomorphism.o graph.o -o iso_calculator
 
 testing: isomorphism graph
 	g++ testing.cpp isomorphism.o graph.o -o testing

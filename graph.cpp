@@ -275,18 +275,19 @@ std::string SimpleGraph::toString() {
 
 	// For each pair of vertices, determine if they are adjacent. If they are, append.
 	bool first = true;
-	FOR_EDGES(
-		vertexCount,
-		,
-		if (!isAdjacent(i, j))
-			continue;
+	for (int i = 0; i < vertexCount - 1; i++) {
+		for (int j = i + 1; j < vertexCount; j++) {
+			if (!isAdjacent(i, j))
+				continue;
 
-		if (!first)
-			graphEncoding += ", ";
-		else
-			first = false;
+			if (!first)
+				graphEncoding += ", ";
+			else
+				first = false;
 
-		graphEncoding += vertexLabels[i] + "-" + vertexLabels[j];)
+			graphEncoding += vertexLabels[i] + "-" + vertexLabels[j];
+		}
+	}
 
 	graphEncoding += "}";
 
