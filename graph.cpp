@@ -254,6 +254,10 @@ bool* SimpleGraph::encodeEdges() {
 	return encoding;
 }
 
+int SimpleGraph::getEncodingLength() {
+	return vertexCount * (vertexCount -1) / 2;
+}
+
 
 
 std::string SimpleGraph::toString() {
