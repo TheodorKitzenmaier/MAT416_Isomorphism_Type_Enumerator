@@ -4,9 +4,60 @@
 #include <iostream>
 #include <string>
 #include <string.h>
+#include <fstream>
+#include <cmath>
 
 //#define DEBUG(v) std::clog << v << std::endl;
 #define DEBUG(v) 
+#define PI 3.14159
+
+float get_x(int v, SimpleGraph* G) {
+	return (float)(sin(2.0 * PI * v / G->getVertexCount()) + 1.0) / 2.0f;
+}
+
+float get_y(int v, SimpleGraph* G) {
+	return (float)(cos(2.0 * PI * v / G->getVertexCount()) + 1.0) / 2.0f;
+}
+
+std::string gen_tex_code(SimpleGraph* G, float scale) {
+	std::string text = "";
+
+	// Header.
+	text += "\\begin{tikzpicture}\n";
+
+	// Draw vertices.
+	for (int i = 0; i < G->getVertexCount(); i++) {
+		text += "\\filldraw (";
+		text += std::to_string(get_x(i, G) * scale);
+		text += ", ";
+		text += std::to_string(get_y(i, G) * scale);
+		text += ") circle[radius=0.1];\n";
+	}
+
+	// Draw edges.
+	text += "\n";
+	for (int i = 0; i < G->getVertexCount() -1; i++) {
+		for (int j = i + 1; j < G->getVertexCount(); j++) {
+			if (!G->isAdjacent(i, j))
+				continue;
+
+			text += "\\draw[thick] (";
+			text += std::to_string(get_x(i, G) * scale);
+			text += ", ";
+			text += std::to_string(get_y(i, G) * scale);
+			text += ") -- (";
+			text += std::to_string(get_x(j, G) * scale);
+			text += ", ";
+			text += std::to_string(get_y(j, G) * scale);
+			text += ");\n";
+		}
+	}
+
+	// Footer.
+	text += "\\end{tikzpicture}";
+
+	return text;
+}
 
 // Simple linked list node.
 class GraphSet {
@@ -145,6 +196,10 @@ int main(int argc, char** argv) {
 	int vertexCount = -1;
 	int minEdges = -1;
 	int maxEdges = -1;
+	bool printTex = false;
+	float texScale = 1.0f;
+	std::string file = "";
+	std::ofstream* output = nullptr;
 
 	// Process arguements.
 	for (int arg = 0; arg < argc; arg++) {
@@ -224,47 +279,107 @@ int main(int argc, char** argv) {
 				return 1;
 			}
 		}
+
+		// Edge configuration
+		if (!strcmp(argv[arg], "-tex")) {
+			arg++;
+			if (!(arg < argc)) {
+				std::cout << "Error: \"-tex\" argument must be followed by filename." << std::endl;
+				return 1;
+			}
+			file = "";
+			file += argv[arg];
+			printTex = true;
+		}
+
+		// Edge configuration
+		if (!strcmp(argv[arg], "-ts")) {
+			arg++;
+			if (!(arg < argc)) {
+				std::cout << "Error: \"-ts\" argument must be followed by float value." << std::endl;
+				return 1;
+			}
+			try {
+				texScale = std::stof(argv[arg]);
+			}
+			catch (std::exception& e) {
+				std::cout << "Error: \"-ts\" argument must be followed by float value." << std::endl;
+				return 1;
+			}
+		}
 	}
 
 	// Followup configuration.
+	// If vertex count is negative, either a negative value was entered, or no value was specified.
 	if (vertexCount <= 0) {
 		std::cout << "Error: Positive vertex count must be specified. Passed using \"-v\" parameter." << std::endl << "See README.md for more information." << std::endl;
 		return 1;
 	}
 
+	// If the minimum edge count is negative, then default to 0.
 	if (minEdges <= 0) {
 		std::cout << "No minimum edge cout specified, assuming 0." << std::endl;
 		minEdges = 0;
 	}
 
+	// If the max edge count is negative, default to max edges.
 	if (maxEdges <= 0) {
 		std::cout << "No maximum edge count specified, assuming " << vertexCount * (vertexCount -1) / 2 << "." << std::endl;
 		maxEdges = vertexCount * (vertexCount -1) / 2;
 	}
 
+	// If the minimum edges is exceeds the maximum, this is an error.
 	if (minEdges > maxEdges) {
 		std::cout << "Error: Minimum edge count must be greater than maximum edge count." << std::endl;
 		return 1;
 	}
 
+	// If the max edge count exceeds the number of possible edges, this is an error.
 	if (maxEdges > vertexCount * (vertexCount -1) / 2) {
 		std::cout << "Error: Invalid edge count. Can be at most " << vertexCount * (vertexCount -1) / 2 << "." << std::endl;
 	}
 
+	if (texScale <= 0.0f) {
+		std::cout << "Error: scale must be positive." << std::endl;
+		return 1;
+	}
+
+	if (printTex) {
+		output = new std::ofstream();
+		output->open(file);
+	}if (printTex) {
+		output = new std::ofstream();
+		output->open(file);
+	}
+
 	// For each edge count, enumerate isomorphism types.
 	for (int i = minEdges; i <= maxEdges; i++) {
+		std::cout << "Isomorphism types with " << vertexCount << " vertices and " << i << " edges:" << std::endl;
 		GraphSet* set = get_isomorphism_types(vertexCount, i);
 
 		// Print.
-		std::cout << "Isomorphism types with " << vertexCount << " vertices and " << i << " edges:" << std::endl;
 		GraphSet* printer = set;
 		while (printer) {
 			std::cout << "(" << printer->count << ")\t" << printer->data->toString() << std::endl;
+
+			if (!printTex) {
+				printer = printer->next;
+				continue;
+			}
+
+			*output << "%(" << printer->count << ")\t" << printer->data->toString() << std::endl;
+			*output << gen_tex_code(printer->data, texScale) << std::endl << std::endl;
 			printer = printer->next;
 		}
 
 		// Clean up.
 		delete set;
+	}
+
+	std::cout << "Calculations complete, closing." << std::endl;
+
+	if (printTex) {
+		output->close();
 	}
 
 	return 0;
